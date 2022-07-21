@@ -2390,21 +2390,27 @@ namespace WP_CLI\Iterators {
         public function __construct($filename, $delimiter = ',')
         {
         }
+				#[\ReturnTypeWillChange]
         public function rewind()
         {
         }
+				#[\ReturnTypeWillChange]
         public function current()
         {
         }
+				#[\ReturnTypeWillChange]
         public function key()
         {
         }
+				#[\ReturnTypeWillChange]
         public function next()
         {
         }
+				#[\ReturnTypeWillChange]
         public function count()
         {
         }
+				#[\ReturnTypeWillChange]
         public function valid()
         {
         }
@@ -2458,18 +2464,23 @@ namespace WP_CLI\Iterators {
         private function load_items_from_db()
         {
         }
+				#[\ReturnTypeWillChange]
         public function current()
         {
         }
+				#[\ReturnTypeWillChange]
         public function key()
         {
         }
+				#[\ReturnTypeWillChange]
         public function next()
         {
         }
+				#[\ReturnTypeWillChange]
         public function rewind()
         {
         }
+				#[\ReturnTypeWillChange]
         public function valid()
         {
         }
@@ -2528,6 +2539,7 @@ namespace WP_CLI\Iterators {
         public function add_transform($fn)
         {
         }
+				#[\ReturnTypeWillChange]
         public function current()
         {
         }

@@ -1700,6 +1700,7 @@ class Translations extends \ArrayObject
     /**
      * @see ArrayObject::__construct()
      */
+		#[\ReturnTypeWillChange]
     public function __construct($input = [], $flags = 0, $iterator_class = 'ArrayIterator', $translationClass = 'Gettext\\Translation')
     {
     }
@@ -1738,6 +1739,7 @@ class Translations extends \ArrayObject
      *
      * @return Translation
      */
+		#[\ReturnTypeWillChange]
     public function offsetSet($index, $value)
     {
     }

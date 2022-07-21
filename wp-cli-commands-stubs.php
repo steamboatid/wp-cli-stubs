@@ -10431,9 +10431,11 @@ namespace {
     }
     class WP_Map_Iterator extends \IteratorIterator
     {
+				#[\ReturnTypeWillChange]
         public function __construct($iterator, $callback)
         {
         }
+				#[\ReturnTypeWillChange]
         public function current()
         {
         }
@@ -10447,18 +10449,23 @@ namespace {
         public function __construct($post_ids, $limit = \null)
         {
         }
+				#[\ReturnTypeWillChange]
         public function current()
         {
         }
+				#[\ReturnTypeWillChange]
         public function key()
         {
         }
+				#[\ReturnTypeWillChange]
         public function next()
         {
         }
+				#[\ReturnTypeWillChange]
         public function rewind()
         {
         }
+				#[\ReturnTypeWillChange]
         public function valid()
         {
         }
