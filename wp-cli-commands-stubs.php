@@ -737,7 +737,7 @@ namespace {
         /**
          * Whether or not to verify contents of the root directory.
          *
-         * @var boolean
+         * @var bool
          */
         private $include_root = \false;
         /**

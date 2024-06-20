@@ -53,9 +53,9 @@ namespace WP_CLI {
          * @param string  $base_dir    Directory containing the class files.
          * @param string  $prefix      Prefix to be added before the class.
          * @param string  $suffix      Suffix to be added after the class.
-         * @param boolean $lowercase   Whether the class should be changed to
+         * @param bool $lowercase   Whether the class should be changed to
          *                             lowercase.
-         * @param boolean $underscores Whether the underscores should be changed to
+         * @param bool $underscores Whether the underscores should be changed to
          *                             hyphens.
          *
          * @return self
@@ -2443,7 +2443,7 @@ namespace WP_CLI {
          *
          * @param string  $type  The type of inflection, either 'plural' or 'singular'
          * @param array   $rules An array of rules to be added.
-         * @param boolean $reset If true, will unset default inflections for all
+         * @param bool $reset If true, will unset default inflections for all
          *                       new rules that are being defined in $rules.
          *
          * @return void
@@ -4546,7 +4546,7 @@ namespace {
          * @category Output
          *
          * @param string|WP_Error|Exception|Throwable $message Message to write to STDERR.
-         * @param boolean|integer            $exit    True defaults to exit(1).
+         * @param bool|integer            $exit    True defaults to exit(1).
          * @return null
          */
         public static function error($message, $exit = \true)
@@ -4659,8 +4659,8 @@ namespace {
          * @category Execution
          *
          * @param string $command External process to launch.
-         * @param boolean $exit_on_error Whether to exit if the command returns an elevated return code.
-         * @param boolean $return_detailed Whether to return an exit status (default) or detailed execution results.
+         * @param bool $exit_on_error Whether to exit if the command returns an elevated return code.
+         * @param bool $return_detailed Whether to return an exit status (default) or detailed execution results.
          * @return int|ProcessRun The command exit status, or a ProcessRun object for full details.
          */
         public static function launch($command, $exit_on_error = \true, $return_detailed = \false)
