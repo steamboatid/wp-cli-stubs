@@ -371,7 +371,7 @@ namespace WP_CLI\Bootstrap {
     /**
      * Class IncludeFrameworkAutoloader.
      *
-     * Loads the framework autoloader through an autolaoder separate from the
+     * Loads the framework autoloader through an autoloader separate from the
      * Composer one, to avoid coupling the loading of the framework with bundled
      * commands.
      *
@@ -416,6 +416,55 @@ namespace WP_CLI\Bootstrap {
          * @return void
          */
         protected function handle_failure()
+        {
+        }
+    }
+    /**
+     * Class IncludeRequestsAutoloader.
+     *
+     * Loads the Requests autoloader that best fits the current environment.
+     *
+     * If a WordPress installation is found, it autoloads that version of Requests.
+     * Otherwise, it loads the version of Requests bundled with WP-CLI.
+     *
+     * This is done in order to avoid conflicts between Requests versions.
+     *
+     * @package WP_CLI\Bootstrap
+     */
+    final class IncludeRequestsAutoloader implements \WP_CLI\Bootstrap\BootstrapStep
+    {
+        /**
+         * Requests is being used from the WordPress installation.
+         *
+         * @var string
+         */
+        const FROM_WP_CORE = 'wp-core';
+        /**
+         * Requests is being used from the WP-CLI dependencies.
+         *
+         * @var string
+         */
+        const FROM_WP_CLI = 'wp-cli';
+        /**
+         * Process this single bootstrapping step.
+         *
+         * @param BootstrapState $state Contextual state to pass into the step.
+         *
+         * @return BootstrapState Modified state to pass to the next step.
+         */
+        public function process(\WP_CLI\Bootstrap\BootstrapState $state)
+        {
+        }
+        /**
+         * Store meta information about the used Requests integration.
+         *
+         * This can be used for all the conditional code that needs to work
+         * across multiple Requests versions.
+         *
+         * @param string $class_name The class name of the Requests integration.
+         * @param string $source     The source of the Requests integration.
+         */
+        private function store_requests_meta($class_name, $source)
         {
         }
     }
@@ -684,6 +733,7 @@ namespace WP_CLI\Compat\Min_PHP_5_4 {
 namespace WP_CLI {
     class Completions
     {
+        private $cur_word;
         private $words;
         private $opts = [];
         /**
@@ -773,11 +823,19 @@ namespace WP_CLI {
          *
          * @var array
          */
-        private static $alias_spec = ['user', 'url', 'path', 'ssh', 'http'];
+        private static $alias_spec = ['user', 'url', 'path', 'ssh', 'http', 'proxyjump', 'key'];
         /**
          * @param string $path Path to config spec file.
          */
         public function __construct($path)
+        {
+        }
+        /**
+         * Loads the config spec file.
+         *
+         * @param string $path Path to the config spec file.
+         */
+        private function load_config_spec($path)
         {
         }
         /**
@@ -930,6 +988,25 @@ namespace WP_CLI\Context {
          * @return void
          */
         private function log_in_as_admin_user()
+        {
+        }
+        /**
+         * Load the admin environment.
+         *
+         * This tries to load `wp-admin/admin.php` while trying to avoid issues
+         * like re-loading the wp-config.php file (which redeclares constants).
+         *
+         * To make this work across WordPress versions, we use the actual file and
+         * modify it on-the-fly.
+         *
+         * @global string $hook_suffix
+         * @global string $pagenow
+         * @global int    $wp_db_version
+         * @global array  $_wp_submenu_nopriv
+         *
+         * @return void
+         */
+        private function load_admin_environment()
         {
         }
     }
@@ -1211,6 +1288,7 @@ namespace WP_CLI\Dispatcher {
     {
         protected $name;
         protected $shortdesc;
+        protected $longdesc;
         protected $synopsis;
         protected $docparser;
         protected $parent;
@@ -1678,6 +1756,27 @@ namespace WP_CLI {
         {
         }
     }
+}
+namespace WP_CLI\Exception {
+    class NonExistentKeyException extends \OutOfBoundsException
+    {
+        /** @var RecursiveDataStructureTraverser */
+        protected $traverser;
+        /**
+         * @param RecursiveDataStructureTraverser $traverser
+         */
+        public function set_traverser($traverser)
+        {
+        }
+        /**
+         * @return RecursiveDataStructureTraverser
+         */
+        public function get_traverser()
+        {
+        }
+    }
+}
+namespace WP_CLI {
     class ExitException extends \Exception
     {
     }
@@ -2464,23 +2563,23 @@ namespace WP_CLI\Iterators {
         private function load_items_from_db()
         {
         }
-				#[\ReturnTypeWillChange]
+        #[\ReturnTypeWillChange]
         public function current()
         {
         }
-				#[\ReturnTypeWillChange]
+        #[\ReturnTypeWillChange]
         public function key()
         {
         }
-				#[\ReturnTypeWillChange]
+        #[\ReturnTypeWillChange]
         public function next()
         {
         }
-				#[\ReturnTypeWillChange]
+        #[\ReturnTypeWillChange]
         public function rewind()
         {
         }
-				#[\ReturnTypeWillChange]
+        #[\ReturnTypeWillChange]
         public function valid()
         {
         }
@@ -2539,7 +2638,7 @@ namespace WP_CLI\Iterators {
         public function add_transform($fn)
         {
         }
-				#[\ReturnTypeWillChange]
+        #[\ReturnTypeWillChange]
         public function current()
         {
         }
@@ -2904,6 +3003,199 @@ namespace WP_CLI {
         }
     }
     /**
+     * Class RequestsLibrary.
+     *
+     * A class to manage the version and source of the Requests library used by WP-CLI.
+     */
+    final class RequestsLibrary
+    {
+        /**
+         * Version 1 of the Requests library.
+         *
+         * @var string
+         */
+        const VERSION_V1 = 'v1';
+        /**
+         * Version 2 of the Requests library.
+         *
+         * @var string
+         */
+        const VERSION_V2 = 'v2';
+        /**
+         * Array of valid versions for the Requests library.
+         *
+         * @var array<string>
+         */
+        const VALID_VERSIONS = [self::VERSION_V1, self::VERSION_V2];
+        /**
+         * Requests library bundled with WordPress Core being used.
+         *
+         * @var string
+         */
+        const SOURCE_WP_CORE = 'wp-core';
+        /**
+         * Requests library bundled with WP-CLI being used.
+         *
+         * @var string
+         */
+        const SOURCE_WP_CLI = 'wp-cli';
+        /**
+         * Array of valid source for the Requests library.
+         *
+         * @var array<string>
+         */
+        const VALID_SOURCES = [self::SOURCE_WP_CORE, self::SOURCE_WP_CLI];
+        /**
+         * Class name of the Requests main class for v1.
+         *
+         * @var string
+         */
+        const CLASS_NAME_V1 = '\\Requests';
+        /**
+         * Class name of the Requests main class for v2.
+         *
+         * @var string
+         */
+        const CLASS_NAME_V2 = '\\WpOrg\\Requests\\Requests';
+        /**
+         * Version of the Requests library being used.
+         *
+         * @var string
+         */
+        private static $version = self::VERSION_V2;
+        /**
+         * Source of the Requests library being used.
+         *
+         * @var string
+         */
+        private static $source = self::SOURCE_WP_CLI;
+        /**
+         * Class name of the Requests library being used.
+         *
+         * @var string
+         */
+        private static $class_name = self::CLASS_NAME_V2;
+        /**
+         * Check if the current version is v1.
+         *
+         * @return bool Whether the current version is v1.
+         */
+        public static function is_v1()
+        {
+        }
+        /**
+         * Check if the current version is v2.
+         *
+         * @return bool Whether the current version is v2.
+         */
+        public static function is_v2()
+        {
+        }
+        /**
+         * Check if the current source for the Requests library is WordPress Core.
+         *
+         * @return bool Whether the current source is WordPress Core.
+         */
+        public static function is_core()
+        {
+        }
+        /**
+         * Check if the current source for the Requests library is WP-CLI.
+         *
+         * @return bool Whether the current source is WP-CLI.
+         */
+        public static function is_cli()
+        {
+        }
+        /**
+         * Get the current version.
+         *
+         * @return string The current version.
+         */
+        public static function get_version()
+        {
+        }
+        /**
+         * Set the version of the library.
+         *
+         * @param string $version The version to set.
+         * @throws RuntimeException if the version is invalid.
+         */
+        public static function set_version($version)
+        {
+        }
+        /**
+         * Get the current class name.
+         *
+         * @return string The current class name.
+         * @throws RuntimeException if the class name is not set.
+         */
+        public static function get_class_name()
+        {
+        }
+        /**
+         * Set the class name for the library.
+         *
+         * @param string $class_name The class name to set.
+         */
+        public static function set_class_name($class_name)
+        {
+        }
+        /**
+         * Get the current source.
+         *
+         * @return string The current source.
+         */
+        public static function get_source()
+        {
+        }
+        /**
+         * Set the source of the library.
+         *
+         * @param string $source The source to set.
+         * @throws RuntimeException if the source is invalid.
+         */
+        public static function set_source($source)
+        {
+        }
+        /**
+         * Check if a given exception was issued by the Requests library.
+         *
+         * This is used because we cannot easily catch multiple different exception
+         * classes with PHP 5.6. Because of that, we catch generic exceptions, check if
+         * they match the Requests library, and re-throw them if they do not.
+         *
+         * @param Exception $exception Exception to check.
+         * @return bool Whether the provided exception was issued by the Requests library.
+         */
+        public static function is_requests_exception(\Exception $exception)
+        {
+        }
+        /**
+         * Register the autoloader for the Requests library.
+         *
+         * This checks for the detected setup and register the corresponding
+         * autoloader if it is still needed.
+         */
+        public static function register_autoloader()
+        {
+        }
+        /**
+         * Get the path to the bundled certificate.
+         *
+         * @return string The path to the bundled certificate.
+         */
+        public static function get_bundled_certificate_path()
+        {
+        }
+        /**
+         * Define WP_CLI_ROOT if it is not already defined.
+         */
+        private static function maybe_define_wp_cli_root()
+        {
+        }
+    }
+    /**
      * Performs the execution of a command.
      *
      * @property-read string         $global_config_path
@@ -3012,9 +3304,9 @@ namespace WP_CLI {
          * Find the directory that contains the WordPress files.
          * Defaults to the current working dir.
          *
-         * @return string An absolute path
+         * @return string An absolute path.
          */
-        private function find_wp_root()
+        public function find_wp_root()
         {
         }
         /**
@@ -3067,7 +3359,7 @@ namespace WP_CLI {
         }
         /**
          * Perform a command against a remote server over SSH (or a container using
-         * scheme of "docker" or "docker-compose").
+         * scheme of "docker", "docker-compose", or "docker-compose-run").
          *
          * @param string $connection_string Passed connection string.
          * @return void
@@ -3374,6 +3666,134 @@ namespace WP_CLI {
         {
         }
     }
+}
+namespace WP_CLI\Traverser {
+    class RecursiveDataStructureTraverser
+    {
+        /**
+         * @var mixed The data to traverse set by reference.
+         */
+        protected $data;
+        /**
+         * @var null|string The key the data belongs to in the parent's data.
+         */
+        protected $key;
+        /**
+         * @var null|static The parent instance of the traverser.
+         */
+        protected $parent;
+        /**
+         * RecursiveDataStructureTraverser constructor.
+         *
+         * @param mixed       $data            The data to read/manipulate by reference.
+         * @param string|int  $key             The key/property the data belongs to.
+         * @param static|null $parent_instance The parent instance of the traverser.
+         */
+        public function __construct(&$data, $key = null, $parent_instance = null)
+        {
+        }
+        /**
+         * Get the nested value at the given key path.
+         *
+         * @param string|int|array $key_path
+         *
+         * @return static
+         */
+        public function get($key_path)
+        {
+        }
+        /**
+         * Get the current data.
+         *
+         * @return mixed
+         */
+        public function value()
+        {
+        }
+        /**
+         * Update a nested value at the given key path.
+         *
+         * @param string|int|array $key_path
+         * @param mixed $value
+         */
+        public function update($key_path, $value)
+        {
+        }
+        /**
+         * Update the current data with the given value.
+         *
+         * This will mutate the variable which was passed into the constructor
+         * as the data is set and traversed by reference.
+         *
+         * @param mixed $value
+         */
+        public function set_value($value)
+        {
+        }
+        /**
+         * Unset the value at the given key path.
+         *
+         * @param $key_path
+         */
+        public function delete($key_path)
+        {
+        }
+        /**
+         * Define a nested value while creating keys if they do not exist.
+         *
+         * @param array $key_path
+         * @param mixed $value
+         */
+        public function insert($key_path, $value)
+        {
+        }
+        /**
+         * Delete the key on the parent's data that references this data.
+         */
+        public function unset_on_parent()
+        {
+        }
+        /**
+         * Delete the given key from the data.
+         *
+         * @param $key
+         */
+        public function delete_by_key($key)
+        {
+        }
+        /**
+         * Get an instance of the traverser for the given hierarchical key.
+         *
+         * @param array $key_path Hierarchical key path within the current data to traverse to.
+         *
+         * @throws NonExistentKeyException
+         *
+         * @return static
+         */
+        public function traverse_to(array $key_path)
+        {
+        }
+        /**
+         * Create the key on the current data.
+         *
+         * @throws UnexpectedValueException
+         */
+        protected function create_key()
+        {
+        }
+        /**
+         * Check if the given key exists on the current data.
+         *
+         * @param string $key
+         *
+         * @return bool
+         */
+        public function exists($key)
+        {
+        }
+    }
+}
+namespace WP_CLI {
     /**
      * A Upgrader Skin for WordPress that only generates plain-text
      *
@@ -3403,6 +3823,13 @@ namespace WP_CLI {
          * @return void
          */
         public function error($error)
+        {
+        }
+        /**
+         * @param string $string
+         * @param mixed  ...$args Optional text replacements.
+         */
+        public function feedback($string, ...$args)
         {
         }
         /**
@@ -3611,10 +4038,11 @@ namespace WP_CLI {
          *
          * @param string $plugin Plugin slug to query.
          * @param string $locale Optional. Locale to request info for. Defaults to 'en_US'.
+         * @param array $fields Optional. Fields to include/omit from the response.
          * @return array|false False on failure. Associative array of the offer on success.
          * @throws RuntimeException If the remote request failed.
          */
-        public function get_plugin_info($plugin, $locale = 'en_US')
+        public function get_plugin_info($plugin, $locale = 'en_US', array $fields = [])
         {
         }
         /**
@@ -3622,10 +4050,11 @@ namespace WP_CLI {
          *
          * @param string $theme  Theme slug to query.
          * @param string $locale Optional. Locale to request info for. Defaults to 'en_US'.
+         * @param array $fields Optional. Fields to include/omit from the response.
          * @return array|false False on failure. Associative array of the offer on success.
          * @throws RuntimeException If the remote request failed.
          */
-        public function get_theme_info($theme, $locale = 'en_US')
+        public function get_theme_info($theme, $locale = 'en_US', array $fields = [])
         {
         }
         /**
@@ -3802,8 +4231,8 @@ namespace {
          *
          * * `before_add_command:<command>` - Before the command is added.
          * * `after_add_command:<command>` - After the command was added.
-         * * `before_invoke:<command>` - Just before a command is invoked.
-         * * `after_invoke:<command>` - Just after a command is invoked.
+         * * `before_invoke:<command>` (1) - Just before a command is invoked.
+         * * `after_invoke:<command>` (1) - Just after a command is invoked.
          * * `find_command_to_run_pre` - Just before WP-CLI finds the command to run.
          * * `before_registering_contexts` (1) - Before the contexts are registered.
          * * `before_wp_load` - Just before the WP load process begins.
@@ -3824,7 +4253,7 @@ namespace {
          * ```
          * # `wp network meta` confirms command is executing in multisite context.
          * WP_CLI::add_command( 'network meta', 'Network_Meta_Command', array(
-         *    'before_invoke' => function () {
+         *    'before_invoke' => function ( $name ) {
          *        if ( !is_multisite() ) {
          *            WP_CLI::error( 'This is not a multisite installation.' );
          *        }
@@ -3924,7 +4353,7 @@ namespace {
          * @category Registration
          *
          * @param string   $name Name for the command (e.g. "post list" or "site empty").
-         * @param callable $callable Command implementation as a class, function or closure.
+         * @param callable|object|string $callable Command implementation as a class, function or closure.
          * @param array    $args {
          *    Optional. An associative array with additional registration parameters.
          *
@@ -4132,6 +4561,7 @@ namespace {
          * @category Output
          *
          * @param integer $return_code
+         * @return never
          */
         public static function halt($return_code)
         {
@@ -4317,13 +4747,15 @@ namespace {
          * * Prevent halting script execution on error.
          * * Capture and return STDOUT, or full details about command execution.
          * * Parse JSON output if the command rendered it.
+         * * Include additional arguments that are passed to the command.
          *
          * ```
          * $options = array(
-         *   'return'     => true,   // Return 'STDOUT'; use 'all' for full object.
-         *   'parse'      => 'json', // Parse captured STDOUT to JSON array.
-         *   'launch'     => false,  // Reuse the current process.
-         *   'exit_error' => true,   // Halt script execution on error.
+         *   'return'       => true,                // Return 'STDOUT'; use 'all' for full object.
+         *   'parse'        => 'json',              // Parse captured STDOUT to JSON array.
+         *   'launch'       => false,               // Reuse the current process.
+         *   'exit_error'   => true,                // Halt script execution on error.
+         *   'command_args' => [ '--skip-themes' ], // Additional arguments to be passed to the $command.
          * );
          * $plugins = WP_CLI::runcommand( 'plugin list --format=json', $options );
          * ```
@@ -4593,6 +5025,26 @@ namespace {
          *     Success: Updated 'prod' alias.
          */
         public function update($args, $assoc_args)
+        {
+        }
+        /**
+         * Check whether an alias is a group.
+         *
+         * ## OPTIONS
+         *
+         * <key>
+         * : Key for the alias.
+         *
+         * ## EXAMPLES
+         *
+         *     # Checks whether the alias is a group; exit status 0 if it is, otherwise 1.
+         *     $ wp cli alias is-group @prod
+         *     $ echo $?
+         *     1
+         *
+         * @subcommand is-group
+         */
+        public function is_group($args, $assoc_args = array())
         {
         }
         /**
@@ -5236,10 +5688,26 @@ namespace WP_CLI\Utils {
 }
 // Utilities that do NOT depend on WordPress code.
 namespace WP_CLI\Utils {
-    function inside_phar()
+    /**
+     * Check if a certain path is within a Phar archive.
+     *
+     * If no path is provided, the function checks whether the current WP_CLI instance is
+     * running from within a Phar archive.
+     *
+     * @param string|null $path Optional. Path to check. Defaults to null, which checks WP_CLI_ROOT.
+     */
+    function inside_phar($path = null)
     {
     }
-    // Files that need to be read by external programs have to be extracted from the Phar archive.
+    /**
+     * Extract a file from a Phar archive.
+     *
+     * Files that need to be read by external programs have to be extracted from the Phar archive.
+     * If the file is not within a Phar archive, the function returns the path unchanged.
+     *
+     * @param string $path Path to the file to extract.
+     * @return string Path to the extracted file.
+     */
     function extract_from_phar($path)
     {
     }
@@ -5479,7 +5947,7 @@ namespace WP_CLI\Utils {
      * @param string  $message  Text to display before the progress bar.
      * @param integer $count    Total number of ticks to be performed.
      * @param int     $interval Optional. The interval in milliseconds between updates. Default 100.
-     * @return cli\progress\Bar|NoOp
+     * @return \cli\progress\Bar|\WP_CLI\NoOp
      */
     function make_progress_bar($message, $count, $interval = 100)
     {
@@ -5543,10 +6011,12 @@ namespace WP_CLI\Utils {
      *
      * @access public
      *
-     * @param string $method  HTTP method (GET, POST, DELETE, etc.).
-     * @param string $url     URL to make the HTTP request to.
-     * @param array  $headers Add specific headers to the request.
-     * @param array  $options {
+     * @param string     $method  HTTP method (GET, POST, DELETE, etc.).
+     * @param string     $url     URL to make the HTTP request to.
+     * @param array|null $data    Data to send either as a query string for GET/HEAD requests,
+     *                            or in the body for POST requests.
+     * @param array      $headers Add specific headers to the request.
+     * @param array      $options {
      *     Optional. An associative array of additional request options.
      *
      *     @type bool $halt_on_error Whether or not command execution should be halted on error. Default: true
@@ -5737,14 +6207,23 @@ namespace WP_CLI\Utils {
     /**
      * Checks whether the output of the current script is a TTY or a pipe / redirect
      *
-     * Returns true if STDOUT output is being redirected to a pipe or a file; false is
+     * Returns `true` if `STDOUT` output is being redirected to a pipe or a file; `false` is
      * output is being sent directly to the terminal.
      *
-     * If an env variable SHELL_PIPE exists, returned result depends on its
-     * value. Strings like 1, 0, yes, no, that validate to booleans are accepted.
+     * If an env variable `SHELL_PIPE` exists, the returned result depends on its
+     * value. Strings like `1`, `0`, `yes`, `no`, that validate to booleans are accepted.
      *
      * To enable ASCII formatting even when the shell is piped, use the
-     * ENV variable SHELL_PIPE=0.
+     * ENV variable `SHELL_PIPE=0`.
+     * ```
+     * SHELL_PIPE=0 wp plugin list | cat
+     * ```
+     *
+     * Note that the db command forwards to the mysql client, which is unaware of the env
+     * variable. For db commands, pass the `--table` option instead.
+     * ```
+     * wp db query --table "SELECT 1" | cat
+     * ```
      *
      * @access public
      *
@@ -5992,6 +6471,22 @@ namespace WP_CLI\Utils {
      *                  read.
      */
     function get_sql_modes()
+    {
+    }
+    /**
+     * Get the WP-CLI cache directory.
+     *
+     * @return string
+     */
+    function get_cache_dir()
+    {
+    }
+    /**
+     * Check whether any input is passed to STDIN.
+     *
+     * @return bool
+     */
+    function has_stdin()
     {
     }
 }

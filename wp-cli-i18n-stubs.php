@@ -1700,7 +1700,6 @@ class Translations extends \ArrayObject
     /**
      * @see ArrayObject::__construct()
      */
-		#[\ReturnTypeWillChange]
     public function __construct($input = [], $flags = 0, $iterator_class = 'ArrayIterator', $translationClass = 'Gettext\\Translation')
     {
     }
@@ -1739,7 +1738,7 @@ class Translations extends \ArrayObject
      *
      * @return Translation
      */
-		#[\ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function offsetSet($index, $value)
     {
     }
@@ -2440,9 +2439,43 @@ class StringReader
 }
 namespace WP_CLI\I18n;
 
+// Modified Gettext Blade extractor that
+// uses the up-to-date BladeOne standalone Blade engine,
+// correctly supports fromStringMultiple.
+/**
+ * Class to get gettext strings from blade.php files returning arrays.
+ */
+class BladeGettextExtractor extends \Gettext\Extractors\PhpCode
+{
+    /**
+     * Prepares a Blade compiler/engine and returns it.
+     *
+     * @return BladeOne
+     */
+    protected static function getBladeCompiler()
+    {
+    }
+    /**
+     * Compiles the Blade template string into a PHP string in one step.
+     *
+     * @param string $text Blade string to be compiled to a PHP string
+     * @return string
+     */
+    protected static function compileBladeToPhp($text)
+    {
+    }
+    /**
+     * {@inheritdoc}
+     *
+     * Note: In the parent PhpCode class fromString() uses fromStringMultiple() (overriden here)
+     */
+    public static function fromStringMultiple($text, array $translations, array $options = [])
+    {
+    }
+}
 trait IterableCodeExtractor
 {
-    private static $dir = '';
+    protected static $dir = '';
     /**
      * Extract the translations from a file.
      *
@@ -2452,6 +2485,7 @@ trait IterableCodeExtractor
      *     Optional. An array of options passed down to static::fromString()
      *
      *     @type bool  $wpExtractTemplates Extract 'Template Name' headers in theme files. Default 'false'.
+     *     @type bool  $wpExtractPatterns  Extract 'Title' and 'Description' headers in pattern files. Default 'false'.
      *     @type array $restrictFileNames  Skip all files which are not included in this array.
      * }
      * @return null
@@ -2471,7 +2505,7 @@ trait IterableCodeExtractor
      *     @type array $exclude           A list of path to exclude. Default [].
      *     @type array $extensions        A list of extensions to process. Default [].
      * }
-     * @return null
+     * @return void
      */
     public static function fromDirectory($dir, \Gettext\Translations $translations, array $options = [])
     {
@@ -2500,13 +2534,33 @@ trait IterableCodeExtractor
      * Recursively gets all PHP files within a directory.
      *
      * @param string $dir A path of a directory.
-     * @param array $include List of files and directories to include.
-     * @param array $exclude List of files and directories to skip.
+     * @param array $includes List of files and directories to include.
+     * @param array $excludes List of files and directories to skip.
      * @param array $extensions List of filename extensions to process.
      *
      * @return array File list.
      */
-    public static function getFilesFromDirectory($dir, array $include = [], array $exclude = [], $extensions = [])
+    public static function getFilesFromDirectory($dir, array $includes = [], array $excludes = [], $extensions = [])
+    {
+    }
+    /**
+     * Determines whether the file extension of a file matches any of the given file extensions.
+     * The end/last part of a multi file extension must also match (`js` of `min.js`).
+     *
+     * @param SplFileInfo $file       File or directory.
+     * @param array       $extensions List of file extensions to match.
+     * @return bool Whether the file has a file extension that matches any of the ones in the list.
+     */
+    protected static function file_has_file_extension($file, $extensions)
+    {
+    }
+    /**
+     * Gets the single- (e.g. `php`) or multi-file extension (e.g. `blade.php`) of a file.
+     *
+     * @param SplFileInfo $file File or directory.
+     * @return string The single- or multi-file extension of the file.
+     */
+    protected static function file_get_extension_multi($file)
     {
     }
     /**
@@ -2515,17 +2569,128 @@ trait IterableCodeExtractor
      * @param string $path Path to trim.
      * @return string Trimmed path.
      */
-    private static function trim_leading_slash($path)
+    protected static function trim_leading_slash($path)
     {
     }
 }
-final class BlockExtractor extends \Gettext\Extractors\Extractor implements \Gettext\Extractors\ExtractorInterface
+final class BladeCodeExtractor extends \WP_CLI\I18n\BladeGettextExtractor
+{
+    use \WP_CLI\I18n\IterableCodeExtractor;
+    public static $options = ['extractComments' => ['translators', 'Translators'], 'constants' => [], 'functions' => [
+        '__' => 'text_domain',
+        'esc_attr__' => 'text_domain',
+        'esc_html__' => 'text_domain',
+        'esc_xml__' => 'text_domain',
+        '_e' => 'text_domain',
+        'esc_attr_e' => 'text_domain',
+        'esc_html_e' => 'text_domain',
+        'esc_xml_e' => 'text_domain',
+        '_x' => 'text_context_domain',
+        '_ex' => 'text_context_domain',
+        'esc_attr_x' => 'text_context_domain',
+        'esc_html_x' => 'text_context_domain',
+        'esc_xml_x' => 'text_context_domain',
+        '_n' => 'single_plural_number_domain',
+        '_nx' => 'single_plural_number_context_domain',
+        '_n_noop' => 'single_plural_domain',
+        '_nx_noop' => 'single_plural_context_domain',
+        // Compat.
+        '_' => 'gettext',
+        // Same as 'text_domain'.
+        // Deprecated.
+        '_c' => 'text_domain',
+        '_nc' => 'single_plural_number_domain',
+        '__ngettext' => 'single_plural_number_domain',
+        '__ngettext_noop' => 'single_plural_domain',
+    ]];
+    protected static $functionsScannerClass = 'WP_CLI\\I18n\\PhpFunctionsScanner';
+    /**
+     * {@inheritdoc}
+     */
+    public static function fromString($text, \Gettext\Translations $translations, array $options = [])
+    {
+    }
+}
+class JsonSchemaExtractor extends \Gettext\Extractors\Extractor
 {
     use \WP_CLI\I18n\IterableCodeExtractor;
     /**
+     * Source URL from which to download the latest theme-i18n.json file.
+     *
+     * @var string
+     */
+    const THEME_JSON_SOURCE = 'https://develop.svn.wordpress.org/trunk/src/wp-includes/theme-i18n.json';
+    /**
+     * Fallback theme-18n.json file path.
+     *
+     * @var string
+     */
+    const THEME_JSON_FALLBACK = __DIR__ . '/../assets/theme-i18n.json';
+    /**
+     * Source URL from which to download the latest block-i18n.json file.
+     *
+     * @var string
+     */
+    const BLOCK_JSON_SOURCE = 'https://develop.svn.wordpress.org/trunk/src/wp-includes/block-i18n.json';
+    /**
+     * Fallback block-18n.json file path.
+     *
+     * @var string
+     */
+    const BLOCK_JSON_FALLBACK = __DIR__ . '/../assets/block-i18n.json';
+    /**
+     * Static cache for the remote schema files.
+     *
+     * @var array<string, string>
+     */
+    protected static $schema_cache = [];
+    /**
+     * Load the i18n from a remote URL or fall back to a local schema in case of an error.
+     * @param string $schema i18n schema URL.
+     * @param string $fallback Fallback i18n schema JSON file.
+     * @return array|mixed
+     */
+    protected static function load_schema($schema, $fallback)
+    {
+    }
+    /**
      * @inheritdoc
      */
-    public static function fromString($string, \Gettext\Translations $translations, array $options = [])
+    public static function fromString($text, \Gettext\Translations $translations, array $options = [])
+    {
+    }
+    /**
+     * Extract strings from a JSON file using its i18n schema.
+     *
+     * @param Translations                   $translations The translations instance to append the new translations.
+     * @param string|null                    $file         JSON file name or null if no reference should be added.
+     * @param string|string[]|array[]|object $i18n_schema  I18n schema for the setting.
+     * @param string|string[]|array[]        $settings     Value for the settings.
+     *
+     * @return void
+     */
+    private static function extract_strings_using_i18n_schema(\Gettext\Translations $translations, $file, $i18n_schema, $settings)
+    {
+    }
+    /**
+     * Given a remote URL, fetches it remotely and returns its content.
+     *
+     * Returns an empty string in case of error.
+     *
+     * @param string $url URL of the file to fetch.
+     *
+     * @return string Contents of the file.
+     */
+    private static function remote_get($url)
+    {
+    }
+}
+final class BlockExtractor extends \WP_CLI\I18n\JsonSchemaExtractor
+{
+    /**
+     * @inheritdoc
+     */
+    public static function fromString($text, \Gettext\Translations $translations, array $options = [])
     {
     }
 }
@@ -2541,6 +2706,52 @@ final class BlockExtractor extends \Gettext\Extractors\Extractor implements \Get
  */
 class CommandNamespace extends \WP_CLI\Dispatcher\CommandNamespace
 {
+}
+class FileDataExtractor
+{
+    /**
+     * Retrieves metadata from a file.
+     *
+     * Searches for metadata in the first 8kiB of a file, such as a plugin or theme.
+     * Each piece of metadata must be on its own line. Fields can not span multiple
+     * lines, the value will get cut at the end of the first line.
+     *
+     * If the file data is not within that first 8kiB, then the author should correct
+     * their plugin file and move the data headers to the top.
+     *
+     * @see get_file_data()
+     *
+     * @param string $file Path to the file.
+     * @param array $headers List of headers, in the format array('HeaderKey' => 'Header Name').
+     *
+     * @return array Array of file headers in `HeaderKey => Header Value` format.
+     */
+    public static function get_file_data($file, $headers)
+    {
+    }
+    /**
+     * Retrieves metadata from a string.
+     *
+     * @param string $text String to look for metadata in.
+     * @param array $headers List of headers.
+     *
+     * @return array Array of file headers in `HeaderKey => Header Value` format.
+     */
+    public static function get_file_data_from_string($text, $headers)
+    {
+    }
+    /**
+     * Strip close comment and close php tags from file headers used by WP.
+     *
+     * @see _cleanup_header_comment()
+     *
+     * @param string $str Header comment to clean up.
+     *
+     * @return string
+     */
+    protected static function _cleanup_header_comment($str)
+    {
+    }
 }
 /**
  * Jed file generator.
@@ -2574,13 +2785,13 @@ final class JsCodeExtractor extends \Gettext\Extractors\JsCode
     /**
      * @inheritdoc
      */
-    public static function fromString($string, \Gettext\Translations $translations, array $options = [])
+    public static function fromString($text, \Gettext\Translations $translations, array $options = [])
     {
     }
     /**
      * @inheritDoc
      */
-    public static function fromStringMultiple($string, array $translations, array $options = [])
+    public static function fromStringMultiple($text, array $translations, array $options = [])
     {
     }
 }
@@ -2771,7 +2982,49 @@ class MakeMoCommand extends \WP_CLI_Command
      * : Path to an existing PO file or a directory containing multiple PO files.
      *
      * [<destination>]
-     * : Path to the destination directory for the resulting MO files. Defaults to the source directory.
+     * : Path to the destination file or directory for the resulting MO files. Defaults to the source directory.
+     *
+     * ## EXAMPLES
+     *
+     *     # Create MO files for all PO files in the current directory.
+     *     $ wp i18n make-mo .
+     *
+     *     # Create a MO file from a single PO file in a specific directory.
+     *     $ wp i18n make-mo example-plugin-de_DE.po languages
+     *
+     *     # Create a MO file from a single PO file to a specific file destination
+     *     $ wp i18n make-mo example-plugin-de_DE.po languages/bar.mo
+     *
+     * @when before_wp_load
+     *
+     * @throws WP_CLI\ExitException
+     */
+    public function __invoke($args, $assoc_args)
+    {
+    }
+}
+class MakePhpCommand extends \WP_CLI_Command
+{
+    /**
+     * Create PHP files from PO files.
+     *
+     * ## OPTIONS
+     *
+     * <source>
+     * : Path to an existing PO file or a directory containing multiple PO files.
+     *
+     * [<destination>]
+     * : Path to the destination directory for the resulting PHP files. Defaults to the source directory.
+     *
+     * ## EXAMPLES
+     *
+     *     # Create PHP files for all PO files in the current directory.
+     *     $ wp i18n make-php .
+     *     Success: Created 3 files.
+     *
+     *     # Create a PHP file from a single PO file in a specific directory.
+     *     $ wp i18n make-php example-plugin-de_DE.po languages
+     *     Success: Created 1 file.
      *
      * @when before_wp_load
      *
@@ -2810,7 +3063,7 @@ class MakePotCommand extends \WP_CLI_Command
     /**
      * @var array
      */
-    protected $exclude = ['node_modules', '.git', '.svn', '.CVS', '.hg', 'vendor', 'Gruntfile.js', 'webpack.config.js', '*.min.js'];
+    protected $exclude = ['node_modules', '.*', 'vendor', 'Gruntfile.js', 'webpack.config.js', '*.min.js', 'test', 'tests'];
     /**
      * @var string
      */
@@ -2820,6 +3073,10 @@ class MakePotCommand extends \WP_CLI_Command
      */
     protected $main_file_data = [];
     /**
+     * @var string
+     */
+    protected $main_file_path;
+    /**
      * @var bool
      */
     protected $skip_js = false;
@@ -2827,6 +3084,10 @@ class MakePotCommand extends \WP_CLI_Command
      * @var bool
      */
     protected $skip_php = false;
+    /**
+     * @var bool
+     */
+    protected $skip_blade = false;
     /**
      * @var bool
      */
@@ -2910,7 +3171,7 @@ class MakePotCommand extends \WP_CLI_Command
     /**
      * Create a POT file for a WordPress project.
      *
-     * Scans PHP and JavaScript files for translatable strings, as well as theme stylesheets and plugin files
+     * Scans PHP, Blade-PHP and JavaScript files for translatable strings, as well as theme stylesheets and plugin files
      * if the source directory is detected as either a plugin or theme.
      *
      * ## OPTIONS
@@ -2955,7 +3216,7 @@ class MakePotCommand extends \WP_CLI_Command
      *
      * [--exclude=<paths>]
      * : Comma-separated list of files and paths that should be skipped for string extraction.
-     * For example, `--exclude=".github,myfile.php` would ignore any strings found within `myfile.php` or the `.github`
+     * For example, `--exclude=.github,myfile.php` would ignore any strings found within `myfile.php` or the `.github`
      * folder. Simple glob patterns can be used, i.e. `--exclude=foo-*.php` excludes any PHP file with the `foo-`
      * prefix. Leading and trailing slashes are ignored, i.e. `/my/directory/` is the same as `my/directory`. The
      * following files and folders are always excluded: node_modules, .git, .svn, .CVS, .hg, vendor, *.min.js.
@@ -2973,6 +3234,9 @@ class MakePotCommand extends \WP_CLI_Command
      *
      * [--skip-php]
      * : Skips PHP string extraction.
+     *
+     * [--skip-blade]
+     * : Skips Blade-PHP string extraction.
      *
      * [--skip-block-json]
      * : Skips string extraction from block.json files.
@@ -3035,10 +3299,10 @@ class MakePotCommand extends \WP_CLI_Command
     /**
      * Removes leading and trailing slashes of a string.
      *
-     * @param string $string What to add and remove slashes from.
+     * @param string $text What to add and remove slashes from.
      * @return string String without leading and trailing slashes.
      */
-    protected function unslashit($string)
+    protected function unslashit($text)
     {
     }
     /**
@@ -3103,49 +3367,6 @@ class MakePotCommand extends \WP_CLI_Command
     protected function get_wp_version()
     {
     }
-    /**
-     * Retrieves metadata from a file.
-     *
-     * Searches for metadata in the first 8kiB of a file, such as a plugin or theme.
-     * Each piece of metadata must be on its own line. Fields can not span multiple
-     * lines, the value will get cut at the end of the first line.
-     *
-     * If the file data is not within that first 8kiB, then the author should correct
-     * their plugin file and move the data headers to the top.
-     *
-     * @see get_file_data()
-     *
-     * @param string $file Path to the file.
-     * @param array $headers List of headers, in the format array('HeaderKey' => 'Header Name').
-     *
-     * @return array Array of file headers in `HeaderKey => Header Value` format.
-     */
-    protected static function get_file_data($file, $headers)
-    {
-    }
-    /**
-     * Retrieves metadata from a string.
-     *
-     * @param string $string String to look for metadata in.
-     * @param array $headers List of headers.
-     *
-     * @return array Array of file headers in `HeaderKey => Header Value` format.
-     */
-    public static function get_file_data_from_string($string, $headers)
-    {
-    }
-    /**
-     * Strip close comment and close php tags from file headers used by WP.
-     *
-     * @see _cleanup_header_comment()
-     *
-     * @param string $str Header comment to clean up.
-     *
-     * @return string
-     */
-    protected static function _cleanup_header_comment($str)
-    {
-    }
 }
 final class MapCodeExtractor extends \Gettext\Extractors\JsCode
 {
@@ -3154,7 +3375,78 @@ final class MapCodeExtractor extends \Gettext\Extractors\JsCode
     /**
      * {@inheritdoc}
      */
-    public static function fromString($string, \Gettext\Translations $translations, array $options = [])
+    public static function fromString($text, \Gettext\Translations $translations, array $options = [])
+    {
+    }
+}
+/**
+ * PHP array file generator.
+ *
+ * Returns output in the form WordPress uses.
+ */
+class PhpArrayGenerator extends \Gettext\Generators\PhpArray
+{
+    public static $options = ['includeHeaders' => false];
+    /**
+     * {@inheritdoc}
+     */
+    public static function toString(\Gettext\Translations $translations, array $options = [])
+    {
+    }
+    /**
+     * Generates an array with the translations.
+     *
+     * @param Translations $translations
+     * @param array        $options
+     *
+     * @return array
+     */
+    public static function generate(\Gettext\Translations $translations, array $options = [])
+    {
+    }
+    /**
+     * Returns a flat array.
+     *
+     * @param Translations $translations
+     * @param bool         $include_headers
+     * @param bool         $force_array Unused.
+     *
+     * @return array
+     */
+    protected static function toArray(\Gettext\Translations $translations, $include_headers, $force_array = false)
+    {
+    }
+    /**
+     * Determines if the given array is a list.
+     *
+     * An array is considered a list if its keys consist of consecutive numbers from 0 to count($array)-1.
+     *
+     * Polyfill for array_is_list() in PHP 8.1.
+     *
+     * @see https://github.com/symfony/polyfill-php81/tree/main
+     *
+     * @since 4.0.0
+     *
+     * @codeCoverageIgnore
+     *
+     * @param array<mixed> $arr The array being evaluated.
+     * @return bool True if array is a list, false otherwise.
+     */
+    private static function array_is_list(array $arr)
+    {
+    }
+    /**
+     * Outputs or returns a parsable string representation of a variable.
+     *
+     * Like {@see var_export()} but "minified", using short array syntax
+     * and no newlines.
+     *
+     * @since 4.0.0
+     *
+     * @param mixed $value The variable you want to export.
+     * @return string The variable representation.
+     */
+    private static function var_export($value)
     {
     }
 }
@@ -3192,7 +3484,7 @@ final class PhpCodeExtractor extends \Gettext\Extractors\PhpCode
     /**
      * {@inheritdoc}
      */
-    public static function fromString($string, \Gettext\Translations $translations, array $options = [])
+    public static function fromString($text, \Gettext\Translations $translations, array $options = [])
     {
     }
 }
@@ -3233,11 +3525,11 @@ class PotGenerator extends \Gettext\Generators\Po
     /**
      * Escapes and adds double quotes to a string.
      *
-     * @param string $string Multiline string.
+     * @param string $text Multiline string.
      *
      * @return string[]
      */
-    protected static function multilineQuote($string)
+    protected static function multilineQuote($text)
     {
     }
     /**
@@ -3251,121 +3543,36 @@ class PotGenerator extends \Gettext\Generators\Po
     {
     }
 }
-final class ThemeJsonExtractor extends \Gettext\Extractors\Extractor implements \Gettext\Extractors\ExtractorInterface
+final class ThemeJsonExtractor extends \WP_CLI\I18n\JsonSchemaExtractor
 {
-    use \WP_CLI\I18n\IterableCodeExtractor;
-    /**
-     * Source URL from which to download the latest theme-i18n.json file.
-     *
-     * @var string
-     */
-    const THEME_JSON_SOURCE = 'https://develop.svn.wordpress.org/trunk/src/wp-includes/theme-i18n.json';
     /**
      * @inheritdoc
      */
-    public static function fromString($string, \Gettext\Translations $translations, array $options = [])
+    public static function fromString($text, \Gettext\Translations $translations, array $options = [])
     {
     }
+}
+class UpdatePoCommand extends \WP_CLI_Command
+{
     /**
-     * Given a remote URL, fetches it remotely and returns its content.
+     * Update PO files from a POT file.
      *
-     * Returns an empty string in case of error.
+     * This behaves similarly to the [msgmerge](https://www.gnu.org/software/gettext/manual/html_node/msgmerge-Invocation.html) command.
      *
-     * @param string $url URL of the file to fetch.
+     * ## OPTIONS
      *
-     * @return string Contents of the file.
+     * <source>
+     * : Path to an existing POT file to use for updating
+     *
+     * [<destination>]
+     * : PO file to update or a directory containing multiple PO files.
+     *   Defaults to all PO files in the source directory.
+     *
+     * @when before_wp_load
+     *
+     * @throws WP_CLI\ExitException
      */
-    private static function remote_get($url)
-    {
-    }
-    /**
-     * Returns a data structure to help setting up translations for theme.json data.
-     *
-     * [
-     *     [
-     *         'path'    => [ 'settings', 'color', 'palette' ],
-     *         'key'     => 'key-that-stores-the-string-to-translate',
-     *         'context' => 'translation-context',
-     *     ],
-     *     [
-     *         'path'    => 'etc',
-     *         'key'     => 'etc',
-     *         'context' => 'etc',
-     *     ],
-     * ]
-     *
-     * Ported from the core class `WP_Theme_JSON_Resolver`.
-     *
-     * @return array An array of theme.json fields that are translatable and the keys that are translatable.
-     */
-    private static function get_fields_to_translate()
-    {
-    }
-    /**
-     * Converts a tree as in theme-i18.json file into a linear array
-     * containing metadata to translate a theme.json file.
-     *
-     * For example, given this input:
-     *
-     *     {
-     *       "settings": {
-     *         "*": {
-     *           "typography": {
-     *             "fontSizes": [ { "name": "Font size name" } ],
-     *             "fontStyles": [ { "name": "Font size name" } ]
-     *           }
-     *         }
-     *       }
-     *     }
-     *
-     * will return this output:
-     *
-     *     [
-     *       0 => [
-     *         'path'    => [ 'settings', '*', 'typography', 'fontSizes' ],
-     *         'key'     => 'name',
-     *         'context' => 'Font size name'
-     *       ],
-     *       1 => [
-     *         'path'    => [ 'settings', '*', 'typography', 'fontStyles' ],
-     *         'key'     => 'name',
-     *         'context' => 'Font style name'
-     *       ]
-     *     ]
-     *
-     * Ported from the core class `WP_Theme_JSON_Resolver`.
-     *
-     * @param array $i18n_partial A tree that follows the format of theme-i18n.json.
-     * @param array $current_path Keeps track of the path as we walk down the given tree.
-     * @return array A linear array containing the paths to translate.
-     */
-    private static function extract_paths_to_translate($i18n_partial, $current_path = [])
-    {
-    }
-    /**
-     * Accesses an array in depth based on a path of keys.
-     *
-     * It is the PHP equivalent of JavaScript's `lodash.get()` and mirroring it may help other components
-     * retain some symmetry between client and server implementations.
-     *
-     * Example usage:
-     *
-     *     $array = [
-     *         'a' => [
-     *             'b' => [
-     *                 'c' => 1,
-     *             ],
-     *         ],
-     *     ];
-     *     array_get( $array, [ 'a', 'b', 'c' ] );
-     *
-     * @param array $array   An array from which we want to retrieve some information.
-     * @param array $path    An array of keys describing the path with which to retrieve information.
-     * @param mixed $default The return value if the path does not exist within the array,
-     *                       or if `$array` or `$path` are not arrays.
-     * @return mixed The value from the path specified.
-     */
-    private static function array_get($array, $path, $default = null)
+    public function __invoke($args, $assoc_args)
     {
     }
 }
